@@ -1,2 +1,2 @@
 
-web: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 webhook_bot:app
+web: python3 webhook_bot.py
