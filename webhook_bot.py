@@ -4,6 +4,7 @@ import logging
 from flask import Flask, request
 from telegram import Update, Bot
 from telegram.ext import CallbackContext
+from telegram.error import TelegramError, NetworkError
 
 # Настройка логгирования
 logging.basicConfig(level=logging.INFO)
@@ -27,7 +28,6 @@ def handle_image(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     bot.send_message(chat_id=chat_id, text="Изображение получено! (обработка не реализована)")
 
-# Webhook
 @app.route("/webhook/telegram", methods=["POST"])
 def telegram_webhook():
     update = Update.de_json(request.get_json(force=True), bot)
@@ -45,7 +45,6 @@ def telegram_webhook():
 
     return "ok", 200
 
-# Служебные маршруты
 @app.route("/status", methods=["GET"])
 def status():
     if TOKEN:
@@ -55,5 +54,9 @@ def status():
 @app.route("/setup-webhook", methods=["GET"])
 async def setup_webhook():
     url = "https://qrr2-go.up.railway.app/webhook/telegram"
-    await bot.set_webhook(url)
-    return f"Webhook успешно установлен на {url}"
+    try:
+        await bot.set_webhook(url)
+        return f"✅ Webhook успешно установлен на {url}"
+    except (TelegramError, NetworkError, Exception) as e:
+        logger.error("Ошибка при установке webhook: %s", str(e))
+        return f"❌ Ошибка установки webhook: {str(e)}", 500
