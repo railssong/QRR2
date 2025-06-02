@@ -1,9 +1,9 @@
 
 import os
 import logging
+import asyncio
 from flask import Flask, request
 from telegram import Update, Bot
-from telegram.ext import CommandHandler, MessageHandler, filters
 from telegram.ext import CallbackContext
 
 # Настройка логгирования
@@ -54,5 +54,5 @@ def status():
 @app.route("/setup-webhook", methods=["GET"])
 def setup_webhook():
     url = f"{request.url_root}webhook/telegram"
-    bot.set_webhook(url)
+    asyncio.run(bot.set_webhook(url))
     return f"Webhook успешно установлен на {url}"
