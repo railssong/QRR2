@@ -54,6 +54,6 @@ def status():
 
 @app.route("/setup-webhook", methods=["GET"])
 async def setup_webhook():
-    url = f"{request.url_root}webhook/telegram"
+    url = "https://qrr2-go.up.railway.app/webhook/telegram"
     await bot.set_webhook(url)
     return f"Webhook успешно установлен на {url}"
