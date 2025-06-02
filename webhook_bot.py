@@ -1,7 +1,6 @@
 
 import os
 import logging
-import asyncio
 from flask import Flask, request
 from telegram import Update, Bot
 from telegram.ext import CallbackContext
@@ -49,10 +48,12 @@ def telegram_webhook():
 # Служебные маршруты
 @app.route("/status", methods=["GET"])
 def status():
-    return "Railway QR Bot работает!"
+    if TOKEN:
+        return "Railway QR Bot работает!"
+    return "Токен не найден", 500
 
 @app.route("/setup-webhook", methods=["GET"])
-def setup_webhook():
+async def setup_webhook():
     url = f"{request.url_root}webhook/telegram"
-    asyncio.run(bot.set_webhook(url))
+    await bot.set_webhook(url)
     return f"Webhook успешно установлен на {url}"
