@@ -1,44 +1,52 @@
 
 import os
+import logging
 from flask import Flask, request
 from telegram import Update, Bot
-from telegram.ext import CommandHandler, MessageHandler, filters, ApplicationBuilder, ContextTypes, Dispatcher
-from PIL import Image
-import io
-import logging
+from telegram.ext import CommandHandler, MessageHandler, filters
+from telegram.ext import CallbackContext
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-
-bot = Bot(token=TOKEN)
-app = Flask(__name__)
-
-# Логгирование
+# Настройка логгирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("webhook_bot")
 
-# Сюда мы сохраним диспетчер (Dispatcher) для обработки сообщений
-dispatcher: Dispatcher = Dispatcher(bot=bot, update_queue=None, workers=1, use_context=True)
+# Инициализация
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+bot = Bot(token=TOKEN)
+app = Flask(__name__)
 
-def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    update.message.reply_text("Привет! Я читаю QR-коды. Отправь мне изображение.")
+# Обработчики
+def start(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    bot.send_message(chat_id=chat_id, text="Привет! Я читаю QR-коды. Отправь мне изображение.")
 
-def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    update.message.reply_text("Просто отправь мне изображение с QR-кодом.")
+def help_command(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    bot.send_message(chat_id=chat_id, text="Просто отправь мне изображение с QR-кодом.")
 
-def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    update.message.reply_text("Изображение получено! (Обработка QR-кода не реализована)")
+def handle_image(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    bot.send_message(chat_id=chat_id, text="Изображение получено! (обработка не реализована)")
 
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CommandHandler("help", help_command))
-dispatcher.add_handler(MessageHandler(filters.PHOTO, handle_image))
-
+# Webhook
 @app.route("/webhook/telegram", methods=["POST"])
 def telegram_webhook():
-    if request.method == "POST":
-        update = Update.de_json(request.get_json(force=True), bot)
-        dispatcher.process_update(update)
-        return "ok", 200
+    update = Update.de_json(request.get_json(force=True), bot)
 
+    if update.message:
+        message = update.message
+        context = CallbackContext.from_update(update, bot)
+
+        if message.text == "/start":
+            start(update, context)
+        elif message.text == "/help":
+            help_command(update, context)
+        elif message.photo:
+            handle_image(update, context)
+
+    return "ok", 200
+
+# Служебные маршруты
 @app.route("/status", methods=["GET"])
 def status():
     return "Railway QR Bot работает!"
